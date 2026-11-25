@@ -1,8 +1,9 @@
 /*
  * The home screen for web-app TVs (LG webOS, Samsung Tizen), with the Android app's design and behavior (HomeView):
- *  - top: the "For You" title and the tabs (Explore, Movies, Shows); icon-only glass buttons at the right (Live TV,
- *    HDMI Inputs, Settings) and the crypto quotes at the end of the tab row;
- *  - three picks for this hour in the selected tab; the background is the focused one's photo, blurred, almost white;
+ *  - top: one bar; the tabs (Explore, Movies, Shows) as a segmented capsule at the start, the crypto quotes and the
+ *    icon-only glass buttons (Live TV, HDMI Inputs, Settings) at the end;
+ *  - three picks for this hour in the selected tab: the focused one is the hero, wide, with its title on the photo; the
+ *    background is its photo, blurred, almost white;
  *  - the glass shelf with the apps; ↓ opens the drawer (inputs, shortcuts, weather, prices); ↑ or Back closes it;
  *  - a night look from sunset to sunrise; a screensaver after a few idle minutes.
  * The remote's arrows, OK and Back move the focus; a pointer (LG's Magic Remote) focuses what it points at.
@@ -497,7 +498,7 @@
     var defs = [[own ? 'tv' : 'live_tv', own ? boxLabel() : tr('light|Live TV')], ['hdmi', tr('HDMI Inputs')], ['settings', tr('light|Settings')]];
     for (var b = 0; b < 3; b++) {
       var r = el('button', 'round' + (b === 2 ? ' last' : ''), buttons);
-      startAt(r, 1596 + 88 * b);   // the buttons sit at the end edge of the screen: the right, or the left when mirrored
+      startAt(r, 1600 + 88 * b);   // the buttons sit at the end edge of the screen: the right, or the left when mirrored
       sym(defs[b][0], r);
       el('div', 'tip', r, defs[b][1]);
       hover(r, Z.TOP, 3 + b);
@@ -534,8 +535,10 @@
       var poster = el('div', 'layer', img);
       poster.style.backgroundImage = 'url(' + (p.poster ? Data.image(p.poster, 'w342') : Data.image(p.backdrop, 'w780')) + ')';
       el('div', 'layer back', img);
-      el('div', 'name', card, I18N.name(p.title));
-      if (p.meta) el('div', 'meta', card, p.meta);
+      // The title and its line sit on the photo, over a shade at its foot (the Apple TV app's hero): nothing under the row.
+      var cap = el('div', 'cap', img);
+      el('div', 'name', cap, I18N.name(p.title));
+      if (p.meta) el('div', 'meta', cap, p.meta);
       hover(card, Z.CARDS, c);
     }
     st.card = Math.min(st.card, Math.max(0, list.length - 1));
@@ -603,8 +606,11 @@
 
   function renderClock() {
     var d = new Date(), c = $('clock');
-    c.firstChild.textContent = formatDate('format|h:mm', d.getTime());
-    c.lastChild.textContent = formatDate('format|EEEE, MMMM d', d.getTime());
+    c.querySelector('.time').textContent = formatDate('format|h:mm', d.getTime());
+    c.querySelector('.date').textContent = formatDate('format|EEEE, MMMM d', d.getTime());
+    // One quiet line under the time, as on Android: the weather, once a forecast came and while its card is on.
+    var w = Prefs.weather() ? Data.weather : null;
+    c.querySelector('.wx').textContent = w ? Data.degrees(w.temp) + '  ' + Data.condition(w.code, w.isDay) : '';
   }
 
   /** On the minute, so the clock never runs late (the 30-second refresh could, by up to 30 s). */
@@ -618,7 +624,7 @@
   var shelfFirst = 0, tileStep = 0, tileLeft = 0;
 
   function renderShelf() {
-    var n = Math.min(shelf.length, SHELF_VISIBLE), gap = 48, pad = 40;
+    var n = Math.min(shelf.length, SHELF_VISIBLE), gap = 40, pad = 36;
     // 16:9 tiles, as on Android: never taller than 126, and the glass keeps its bottom edge.
     var tw = Math.min(126 * 16 / 9, (1760 - Math.max(0, n - 1) * gap) / Math.max(1, n)), th = tw * 9 / 16;
     var width = n * tw + Math.max(0, n - 1) * gap, left = (1920 - width) / 2;
@@ -628,7 +634,6 @@
     platter.style.width = (width + 2 * pad) + 'px';
     platter.style.top = (814 + 126 - th) + 'px';
     platter.style.height = (th + 2 * pad) + 'px';
-    endAt($('quotes'), 1920 - left - width);
     var tiles = $('tiles');
     tiles.innerHTML = '';
     tileStep = tw + gap;
@@ -1950,6 +1955,7 @@
     renderQuotes();
     renderCards();
     renderPanels();
+    renderClock();
     checkNight();
   });
 

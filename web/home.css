@@ -1,14 +1,20 @@
 /*
- * The home screen on a 1920 × 1080 stage, with the Android app's measurements (HomeView): the title and tabs at the top
- * left, icon-only glass buttons at the top right, three picks, and the glass shelf at the bottom; ↓ on the shelf opens
- * the drawer (inputs, shortcuts, weather, prices). Light by day, dark from sunset to sunrise.
+ * The home screen on a 1920 × 1080 stage, with the Android app's measurements (HomeView): one bar at the top (the tabs as
+ * a segmented capsule at the start edge, the quotes and the icon-only glass buttons at the end), three picks whose focused
+ * one is the hero, with its title on the photo, and the glass shelf at the bottom; ↓ on the shelf opens the drawer
+ * (inputs, shortcuts, weather, prices). Light by day, dark from sunset to sunrise.
  * No CSS variables, grid or backdrop-filter: older LG TVs (webOS 3 and 4) don't have them, and blur is too heavy for
- * their GPUs. Only transform and opacity animate.
+ * their GPUs. Only transform and opacity animate: a shadow or a color changes at once, so a move never repaints for
+ * 200 ms (the GPU slides a layer instead). One easing everywhere, cubic-bezier(0.2, 0.8, 0.2, 1), without overshoot:
+ * on a 30 fps TV an overshoot reads as a jitter.
+ * The grid: 80 px margins (MARGIN on Android), the top bar at 64 (64 tall), the hero from 180 to 680, the shelf at 814.
  */
 /* Inter in fixed weights (rsms/inter 4.1, web/fonts): Chromium before 62 (webOS 3 and 4, Tizen 3) can't use a variable
    font's weights nor a "100 900" range. Measured on a 2016 LG (webOS 3.4): with the variable font alone, text at 200, 400
    and 700 drew alike (the same width, 1102 px); with these, 700 is 1128 px. A TV loads only the weights a page shows,
-   and 100 falls back to 200. Without WOFF2 (Tizen 2.4's WebKit) each face falls back to the variable font, as before. */
+   and 100 falls back to 200. Without WOFF2 (Tizen 2.4's WebKit) each face falls back to the variable font, as before.
+   The screen uses four of them (200 for the big numerals, 400, 500 and 600): Light and Bold stay declared but unused,
+   so a TV downloads two files (about 225 KB) less at its first start. */
 @font-face { font-family: 'Inter'; src: url('fonts/Inter-ExtraLight.woff2') format('woff2'), url('fonts/InterVariable.ttf') format('truetype'); font-weight: 200; }
 @font-face { font-family: 'Inter'; src: url('fonts/Inter-Light.woff2') format('woff2'), url('fonts/InterVariable.ttf') format('truetype'); font-weight: 300; }
 @font-face { font-family: 'Inter'; src: url('fonts/Inter-Regular.woff2') format('woff2'), url('fonts/InterVariable.ttf') format('truetype'); font-weight: 400; }
@@ -82,8 +88,8 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 #saver { z-index: 4; }
 
 #home, #drawer {
-  -webkit-transition: -webkit-transform 0.38s cubic-bezier(0.32, 0.72, 0.2, 1), opacity 0.28s;
-  transition: transform 0.38s cubic-bezier(0.32, 0.72, 0.2, 1), opacity 0.28s;
+  -webkit-transition: -webkit-transform 0.38s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.28s;
+  transition: transform 0.38s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.28s;
 }
 .drawer-open #home { -webkit-transform: translateY(-560px); transform: translateY(-560px); }
 #top { -webkit-transition: opacity 0.2s; transition: opacity 0.2s; }
@@ -94,58 +100,59 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 #drawer { pointer-events: none; }
 .drawer-open #drawer .key { pointer-events: auto; }
 
-/* MARK: - Title and tabs */
+/* MARK: - The top bar: tabs at the start, quotes and buttons at the end, all 64 tall on one line at 64. */
 
-#title {
+/* The section title went: the selected tab says it, and the hero gets the room (as the Apple TV app's top bar). */
+#title { display: none; }
+
+/* The tabs as a segmented capsule: the selected one sits on a white pill, the focused one lifts. */
+#tabs {
   position: absolute;
-  left: 76px;
-  top: 52px;
-  margin: 0;
-  font-size: 76px;
-  font-weight: 600;
-  letter-spacing: 0.004em;
-  line-height: 1;
+  left: 80px;
+  top: 64px;
+  height: 64px;
+  padding: 0 6px;
+  border-radius: 32px;
   white-space: nowrap;
-  color: #1D1D1F;
-  -webkit-transition: color 2s;
-  transition: color 2s;
+  background: rgba(255, 255, 255, 0.46);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), inset 0 0 0 1px rgba(255, 255, 255, 0.45);
 }
-
-#tabs { position: absolute; left: 54px; top: 158px; height: 68px; white-space: nowrap; }
 .tab {
   position: relative;
   display: inline-block;
-  height: 68px;
-  padding: 0 26px;
-  margin-right: 4px;
-  border-radius: 34px;
-  font-size: 30px;
+  height: 52px;
+  margin: 6px 0;
+  padding: 0 28px;
+  border-radius: 26px;
+  font-size: 27px;
   font-weight: 500;
-  line-height: 68px;
+  line-height: 52px;
   color: #6E6E73;
-  -webkit-transition: -webkit-transform 0.2s cubic-bezier(0.2, 0.9, 0.3, 1.2), background-color 0.17s, box-shadow 0.2s, color 0.17s;
-  transition: transform 0.2s cubic-bezier(0.2, 0.9, 0.3, 1.2), background-color 0.17s, box-shadow 0.2s, color 0.17s;
+  vertical-align: top;
+  -webkit-transition: -webkit-transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
-.tab.on { font-weight: 600; color: #1D1D1F; }
+.tab.on { font-weight: 600; color: #1D1D1F; background: #FFF; box-shadow: 0 3px 12px rgba(0, 0, 0, 0.1); }
 .tab.focus {
   background: #FFF;
   color: #1D1D1F;
-  -webkit-transform: scale(1.05);
-  transform: scale(1.05);
-  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.22);
+  -webkit-transform: scale(1.06);
+  transform: scale(1.06);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.2);
 }
-.night #title, .night .tab.on { color: #F5F5F7; }
+.night #tabs { background: rgba(255, 255, 255, 0.08); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), inset 0 0 0 1px rgba(255, 255, 255, 0.06); }
 .night .tab { color: rgba(245, 245, 247, 0.62); }
-.night .tab.focus { color: #1D1D1F; box-shadow: 0 8px 26px rgba(0, 0, 0, 0.4); }
+.night .tab.on { color: #F5F5F7; background: rgba(255, 255, 255, 0.16); box-shadow: none; }
+.night .tab.focus { color: #1D1D1F; background: #FFF; box-shadow: 0 10px 28px rgba(0, 0, 0, 0.4); }
 
-/* Crypto quotes at the right end of the tab row: a quiet detail. */
+/* Crypto quotes: one quiet line beside the buttons, so the bar is the only chrome above the hero. */
 #quotes {
   position: absolute;
-  right: 80px;
-  top: 178px;
-  height: 28px;
-  font-size: 21px;
-  line-height: 28px;
+  right: 360px;
+  top: 64px;
+  height: 64px;
+  font-size: 22px;
+  line-height: 64px;
   color: #8E8E93;
   white-space: nowrap;
   -webkit-transition: opacity 0.17s;
@@ -153,36 +160,36 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
   -webkit-font-feature-settings: 'tnum';
   font-feature-settings: 'tnum';
 }
-#quotes .q { display: inline-block; margin-left: 24px; }
-#quotes svg { width: 15px; height: 15px; vertical-align: -1px; margin-right: 6px; fill: rgba(142, 142, 147, 0.7); }
+#quotes .q { display: inline-block; margin-left: 26px; }
+#quotes svg { width: 15px; height: 15px; vertical-align: -1px; margin-right: 7px; fill: rgba(142, 142, 147, 0.7); }
 #quotes.hide { opacity: 0; }
-.night #quotes { color: rgba(245, 245, 247, 0.62); }
-.night #quotes svg { fill: rgba(245, 245, 247, 0.55); }
+.night #quotes { color: rgba(245, 245, 247, 0.55); }
+.night #quotes svg { fill: rgba(245, 245, 247, 0.5); }
 
-/* Live TV, HDMI Inputs and Settings: glass circles; the focused one turns white, with its name below. */
+/* Live TV, HDMI Inputs and Settings: glass circles; the focused one turns white and lifts, with its name below. */
 .round {
   position: absolute;
-  top: 69px;
-  width: 68px;
-  height: 68px;
-  border-radius: 34px;
+  top: 64px;
+  width: 64px;
+  height: 64px;
+  border-radius: 32px;
   background: -webkit-linear-gradient(top, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.5));
   background: linear-gradient(rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.5));
-  box-shadow: 0 6px 26px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.9), inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.9), inset 0 0 0 1px rgba(255, 255, 255, 0.5);
   color: #1D1D1F;
-  -webkit-transition: -webkit-transform 0.2s cubic-bezier(0.2, 0.9, 0.3, 1.2), box-shadow 0.2s, background-color 0.17s;
-  transition: transform 0.2s cubic-bezier(0.2, 0.9, 0.3, 1.2), box-shadow 0.2s, background-color 0.17s;
+  -webkit-transition: -webkit-transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
-.round .sym { position: absolute; left: 20px; top: 20px; width: 28px; height: 28px; }
-.round.focus { background: #FFF; -webkit-transform: scale(1.1); transform: scale(1.1); box-shadow: 0 14px 30px rgba(0, 0, 0, 0.24); }
+.round .sym { position: absolute; left: 18px; top: 18px; width: 28px; height: 28px; }
+.round.focus { background: #FFF; -webkit-transform: scale(1.1); transform: scale(1.1); box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22); }
 .round .tip {
   position: absolute;
-  top: 88px;
+  top: 82px;
   left: 50%;
   width: 300px;
   margin-left: -150px;
   text-align: center;
-  font-size: 23px;
+  font-size: 22px;
   font-weight: 600;
   white-space: nowrap;
   opacity: 0;
@@ -194,28 +201,28 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .night .round {
   background: -webkit-linear-gradient(top, rgba(40, 40, 44, 0.8), rgba(17, 17, 19, 0.62));
   background: linear-gradient(rgba(40, 40, 44, 0.8), rgba(17, 17, 19, 0.62));
-  box-shadow: 0 6px 26px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.14), inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.14), inset 0 0 0 1px rgba(255, 255, 255, 0.08);
   color: rgba(255, 255, 255, 0.92);
 }
 .night .round.focus { background: #FFF; color: #1D1D1F; }
 .night .round.focus .tip { color: #F5F5F7; }
 
-/* MARK: - Picks: the card with focus is wide, the others narrow (posters); it grows 5%, rises and its edge lights up. */
+/* MARK: - Picks: the card with focus is the hero, wide, with its title on the photo; the others narrow (posters). */
 
 #cards {
   position: absolute;
   left: 0;
   top: 0;
-  -webkit-transition: -webkit-transform 0.32s cubic-bezier(0.2, 0.9, 0.3, 1);
-  transition: transform 0.32s cubic-bezier(0.2, 0.9, 0.3, 1);
+  -webkit-transition: -webkit-transform 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: transform 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .card {
   position: absolute;
-  top: 262px;
-  height: 442px;
-  -webkit-transition: -webkit-transform 0.22s cubic-bezier(0.2, 0.9, 0.3, 1.15);
-  transition: transform 0.22s cubic-bezier(0.2, 0.9, 0.3, 1.15);
+  top: 180px;
+  height: 500px;
+  -webkit-transition: -webkit-transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .card .img {
   position: absolute;
@@ -223,14 +230,12 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
   top: 0;
   width: 100%;
   height: 100%;
-  border-radius: 18px;
+  border-radius: 24px;
   overflow: hidden;
   background-color: #DADADF;
   background-size: cover;
   background-position: center;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.14);
-  -webkit-transition: box-shadow 0.22s;
-  transition: box-shadow 0.22s;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.14);
 }
 /* As Backdrop.card(…, 0): taller than the card, a poster keeps its title and the wide card its photo's top. */
 .card .layer {
@@ -248,6 +253,21 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
   transition: opacity 0.3s;
 }
 .card.wide .back { opacity: 1; }
+/* The hero's caption: a soft shade climbs from the foot of the photo, and the title and its line sit on it (the Apple
+   TV app's hero). Narrow, a poster shows its own title, so the caption fades with the shade. */
+.card .cap {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 46%;
+  background: -webkit-linear-gradient(top, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.64));
+  background: linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.64));
+  opacity: 0;
+  -webkit-transition: opacity 0.3s;
+  transition: opacity 0.3s;
+}
+.card.wide .cap { opacity: 1; }
 .card .img::after {
   content: '';
   position: absolute;
@@ -255,106 +275,99 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
   top: 0;
   right: 0;
   bottom: 0;
-  border-radius: 18px;
-  box-shadow: inset 0 0 0 2.5px rgba(255, 255, 255, 0.85);
-  background: -webkit-linear-gradient(-60deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0) 55%);
-  background: linear-gradient(150deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0) 55%);
+  border-radius: 24px;
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.7);
   opacity: 0;
   -webkit-transition: opacity 0.17s;
   transition: opacity 0.17s;
 }
-.card.focus { -webkit-transform: translateY(-6px) scale(1.05); transform: translateY(-6px) scale(1.05); z-index: 2; }
-.card.focus .img { box-shadow: 0 24px 46px rgba(0, 0, 0, 0.34); }
+.card.focus { -webkit-transform: scale(1.03); transform: scale(1.03); z-index: 2; }
+.card.focus .img { box-shadow: 0 28px 60px rgba(0, 0, 0, 0.3); }
 .card.focus .img::after { opacity: 1; }
 .card .name {
   position: absolute;
-  left: 0;
-  top: 464px;
-  max-width: 100%;
+  left: 40px;
+  right: 40px;
+  bottom: 76px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 31px;
+  font-size: 44px;
   font-weight: 600;
-  letter-spacing: 0.012em;
-  color: #1D1D1F;
-  -webkit-transition: color 2s;
-  transition: color 2s;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+  color: #FFF;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.35);
 }
 .card .meta {
   position: absolute;
-  left: 0;
-  top: 506px;
-  max-width: 100%;
+  left: 40px;
+  right: 40px;
+  bottom: 38px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 25px;
+  font-size: 24px;
   font-weight: 500;
-  color: #6E6E73;
-  opacity: 0;
-  -webkit-transition: opacity 0.3s;
-  transition: opacity 0.3s;
+  color: rgba(255, 255, 255, 0.74);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
 }
-.card.wide .meta { opacity: 1; }
 .card.edge .name, .card.edge .meta { visibility: hidden; }
-.night .card .img { background-color: #2C2C2E; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.32); }
-.night .card .name { color: #F5F5F7; }
-.night .card .meta { color: rgba(245, 245, 247, 0.62); }
+.night .card .img { background-color: #2C2C2E; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.32); }
+.night .card.focus .img { box-shadow: 0 28px 60px rgba(0, 0, 0, 0.55); }
 
-/* Without a TMDB key (or picks yet): the date and the time instead of the cards. */
+/* Without a TMDB key (or picks yet): the date, the time and the weather instead of the cards, as Android's clock layout. */
 #clock {
   position: absolute;
-  left: 76px;
-  top: 300px;
-  font-size: 176px;
-  font-weight: 200;
-  letter-spacing: -0.01em;
-  line-height: 1;
+  left: 80px;
+  top: 262px;
   color: #1D1D1F;
   display: none;
+  white-space: nowrap;
 }
-#clock .date { display: block; font-size: 40px; font-weight: 500; letter-spacing: 0; margin-top: 18px; color: #6E6E73; }
+#clock .date { display: block; font-size: 34px; font-weight: 500; letter-spacing: 0; margin-bottom: 14px; color: #6E6E73; }
+#clock .time { display: block; font-size: 200px; font-weight: 200; letter-spacing: -0.02em; line-height: 1; -webkit-font-feature-settings: 'tnum'; font-feature-settings: 'tnum'; }
+#clock .wx { display: block; font-size: 32px; font-weight: 400; margin-top: 24px; color: #6E6E73; }
 .no-picks #clock { display: block; }
 .no-key #title, .no-key #tabs { visibility: hidden; }
 .night #clock { color: #F5F5F7; }
-.night #clock .date { color: rgba(245, 245, 247, 0.62); }
+.night #clock .date, .night #clock .wx { color: rgba(245, 245, 247, 0.62); }
 
-/* MARK: - Shelf: the glass bar with the apps, each in its brand color; focused, a tile grows 20% and rises. */
+/* MARK: - Shelf: the glass bar with the apps, each in its brand color; focused, a tile grows 10% and lifts. */
 
 #platter {
   position: absolute;
   top: 814px;
-  height: 206px;
-  border-radius: 62px;
-  background: -webkit-linear-gradient(top, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.4));
-  background: linear-gradient(rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.4));
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.12), inset 0 1.5px 0 rgba(255, 255, 255, 0.95), inset 0 0 0 1px rgba(255, 255, 255, 0.55);
+  height: 198px;
+  border-radius: 48px;
+  background: -webkit-linear-gradient(top, rgba(255, 255, 255, 0.56), rgba(255, 255, 255, 0.36));
+  background: linear-gradient(rgba(255, 255, 255, 0.56), rgba(255, 255, 255, 0.36));
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.95), inset 0 0 0 1px rgba(255, 255, 255, 0.5);
 }
 .night #platter {
-  background: -webkit-linear-gradient(top, rgba(34, 34, 38, 0.72), rgba(17, 17, 19, 0.6));
-  background: linear-gradient(rgba(34, 34, 38, 0.72), rgba(17, 17, 19, 0.6));
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.32), inset 0 1.5px 0 rgba(255, 255, 255, 0.14), inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  background: -webkit-linear-gradient(top, rgba(34, 34, 38, 0.66), rgba(17, 17, 19, 0.54));
+  background: linear-gradient(rgba(34, 34, 38, 0.66), rgba(17, 17, 19, 0.54));
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.12), inset 0 0 0 1px rgba(255, 255, 255, 0.07);
 }
 
 #tiles {
   position: absolute;
   left: 0;
   top: 0;
-  -webkit-transition: -webkit-transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1);
-  transition: transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1);
+  -webkit-transition: -webkit-transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .tile {
   position: absolute;
   top: 854px;
   height: 126px;
-  border-radius: 22px;
+  border-radius: 24px;
   overflow: hidden;
   color: #FFF;
-  box-shadow: 0 4px 22px rgba(0, 0, 0, 0.14);
-  -webkit-transition: -webkit-transform 0.2s cubic-bezier(0.2, 0.9, 0.3, 1.2), box-shadow 0.2s, opacity 0.3s;
-  transition: transform 0.2s cubic-bezier(0.2, 0.9, 0.3, 1.2), box-shadow 0.2s, opacity 0.3s;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12), inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  -webkit-transition: -webkit-transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.3s;
+  transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.3s;
 }
 .tile img { position: absolute; left: 50%; top: 50%; max-width: 76%; max-height: 62%; -webkit-transform: translate(-50%, -50%); transform: translate(-50%, -50%); }
 /* a logo lifted off the TV's icon (home.js): as large as the tile allows */
@@ -369,7 +382,7 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
   line-height: 40px;
   text-align: center;
   font-size: 30px;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: -0.01em;
   white-space: nowrap;
   overflow: hidden;
@@ -382,64 +395,64 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
   top: 0;
   right: 0;
   height: 50%;
-  background: -webkit-linear-gradient(top, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0));
-  background: linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0));
+  background: -webkit-linear-gradient(top, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0));
+  background: linear-gradient(rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0));
   opacity: 0;
   -webkit-transition: opacity 0.17s;
   transition: opacity 0.17s;
 }
-.tile.focus { -webkit-transform: scale(1.2); transform: scale(1.2); box-shadow: 0 18px 40px rgba(0, 0, 0, 0.34); z-index: 2; }
+.tile.focus { -webkit-transform: scale(1.1); transform: scale(1.1); box-shadow: 0 20px 44px rgba(0, 0, 0, 0.32), inset 0 0 0 1px rgba(255, 255, 255, 0.22); z-index: 2; }
 .tile.focus::after { opacity: 1; }
-.night .tile { box-shadow: 0 4px 22px rgba(0, 0, 0, 0.3); }
-.night .tile.focus { box-shadow: 0 18px 40px rgba(0, 0, 0, 0.6); }
+.night .tile { box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3), inset 0 0 0 1px rgba(255, 255, 255, 0.06); }
+.night .tile.focus { box-shadow: 0 20px 44px rgba(0, 0, 0, 0.6), inset 0 0 0 1px rgba(255, 255, 255, 0.22); }
 .more { position: absolute; width: 17px; height: 17px; color: rgba(0, 0, 0, 0.6); }
 .more.back { -webkit-transform: scaleX(-1); transform: scaleX(-1); }
 .night .more { color: rgba(255, 255, 255, 0.8); }
 
 /* MARK: - Drawer: inputs and shortcuts, weather, prices */
 
-.row-title { position: absolute; top: 494px; font-size: 25px; font-weight: 600; color: #6E6E73; white-space: nowrap; }
+.row-title { position: absolute; top: 494px; font-size: 24px; font-weight: 600; color: #6E6E73; white-space: nowrap; }
 .night .row-title { color: rgba(255, 255, 255, 0.7); }
 
 .glass {
   background: -webkit-linear-gradient(top, rgba(255, 255, 255, 0.86), rgba(255, 255, 255, 0.66));
   background: linear-gradient(rgba(255, 255, 255, 0.86), rgba(255, 255, 255, 0.66));
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1), inset 0 1.5px 0 rgba(255, 255, 255, 0.95), inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.95), inset 0 0 0 1px rgba(255, 255, 255, 0.5);
 }
 .night .glass {
   background: -webkit-linear-gradient(top, rgba(38, 38, 42, 0.78), rgba(17, 17, 19, 0.64));
   background: linear-gradient(rgba(38, 38, 42, 0.78), rgba(17, 17, 19, 0.64));
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3), inset 0 1.5px 0 rgba(255, 255, 255, 0.12), inset 0 0 0 1px rgba(255, 255, 255, 0.07);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.12), inset 0 0 0 1px rgba(255, 255, 255, 0.07);
 }
 
 .key {
   position: absolute;
   top: 540px;
   height: 126px;
-  border-radius: 20px;
+  border-radius: 24px;
   text-align: center;
   color: #1D1D1F;
-  -webkit-transition: -webkit-transform 0.19s cubic-bezier(0.2, 0.9, 0.3, 1.2), box-shadow 0.19s, background-color 0.14s;
-  transition: transform 0.19s cubic-bezier(0.2, 0.9, 0.3, 1.2), box-shadow 0.19s, background-color 0.14s;
+  -webkit-transition: -webkit-transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .key .sym { position: absolute; left: 50%; top: 33px; width: 34px; height: 34px; margin-left: -17px; }
 .key .label { position: absolute; left: 8px; right: 8px; top: 82px; font-size: 23px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .key.off { color: #8E8E93; }
-.key.focus { background: #F5F5F7; color: #1C1C1E; -webkit-transform: scale(1.07); transform: scale(1.07); box-shadow: 0 16px 34px rgba(0, 0, 0, 0.42); z-index: 2; }
+.key.focus { background: #F5F5F7; color: #1C1C1E; -webkit-transform: scale(1.08); transform: scale(1.08); box-shadow: 0 16px 34px rgba(0, 0, 0, 0.36); z-index: 2; }
 .night .key { color: rgba(255, 255, 255, 0.95); }
 .night .key.off { color: rgba(255, 255, 255, 0.42); }
 .night .key.focus { color: #1C1C1E; }
 
-.panel { position: absolute; top: 708px; height: 300px; border-radius: 30px; overflow: hidden; color: #1D1D1F; }
+.panel { position: absolute; top: 708px; height: 300px; border-radius: 32px; overflow: hidden; color: #1D1D1F; }
 .night .panel { color: #F5F5F7; }
-.panel .head { position: absolute; left: 34px; top: 30px; font-size: 25px; font-weight: 600; color: #6E6E73; white-space: nowrap; }
+.panel .head { position: absolute; left: 34px; top: 30px; font-size: 24px; font-weight: 600; color: #6E6E73; white-space: nowrap; }
 .panel .side { position: absolute; right: 34px; top: 33px; font-size: 21px; font-weight: 500; color: #8E8E93; white-space: nowrap; }
 .night .panel .head { color: rgba(255, 255, 255, 0.7); }
 .night .panel .side { color: rgba(255, 255, 255, 0.6); }
 
 #weather .now { position: absolute; left: 34px; top: 82px; height: 100px; white-space: nowrap; }
 #weather .now .sym { width: 56px; height: 56px; vertical-align: 12px; margin-right: 18px; }
-#weather .now .temp { font-size: 100px; font-weight: 300; line-height: 100px; -webkit-font-feature-settings: 'tnum'; font-feature-settings: 'tnum'; }
+#weather .now .temp { font-size: 100px; font-weight: 200; line-height: 100px; -webkit-font-feature-settings: 'tnum'; font-feature-settings: 'tnum'; }
 #weather .cond { position: absolute; left: 34px; top: 192px; font-size: 29px; font-weight: 500; white-space: nowrap; }
 /* The line under the condition appears only when it says something; without it the card is main's, exactly. */
 #weather .extra { position: absolute; left: 34px; top: 218px; font-size: 21px; font-weight: 500; color: #6E6E73; white-space: nowrap; max-width: 352px; overflow: hidden; text-overflow: ellipsis; }
@@ -483,13 +496,13 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
   pointer-events: none; /* while it fades out, the pointer goes to what's under it, not to its rows */
   -webkit-transform: scale(1.04);
   transform: scale(1.04);
-  -webkit-transition: opacity 0.24s, -webkit-transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1), visibility 0s 0.3s;
-  transition: opacity 0.24s, transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1), visibility 0s 0.3s;
+  -webkit-transition: opacity 0.24s, -webkit-transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0s 0.3s;
+  transition: opacity 0.24s, transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0s 0.3s;
 }
 .sheet.open { opacity: 1; visibility: visible; pointer-events: auto; -webkit-transform: none; transform: none; -webkit-transition-delay: 0s; transition-delay: 0s; }
 .sheet h2 { position: absolute; left: 0; right: 0; top: 84px; margin: 0; text-align: center; font-size: 40px; font-weight: 600; }
 
-#apps .grid { position: absolute; left: 0; top: 0; width: 1920px; -webkit-transition: -webkit-transform 0.28s cubic-bezier(0.2, 0.9, 0.3, 1); transition: transform 0.28s cubic-bezier(0.2, 0.9, 0.3, 1); }
+#apps .grid { position: absolute; left: 0; top: 0; width: 1920px; -webkit-transition: -webkit-transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1); transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1); }
 .cell { position: absolute; width: 300px; height: 169px; }
 .cell .face {
   position: absolute;
@@ -497,15 +510,15 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
   top: 0;
   width: 300px;
   height: 169px;
-  border-radius: 22px;
+  border-radius: 24px;
   overflow: hidden;
   box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.08);
-  -webkit-transition: -webkit-transform 0.19s cubic-bezier(0.2, 0.9, 0.3, 1.2), box-shadow 0.19s;
-  transition: transform 0.19s cubic-bezier(0.2, 0.9, 0.3, 1.2), box-shadow 0.19s;
+  -webkit-transition: -webkit-transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .cell .face img { position: absolute; left: 50%; top: 50%; max-width: 70%; max-height: 60%; -webkit-transform: translate(-50%, -50%); transform: translate(-50%, -50%); }
 .cell .face img.logo { width: 64%; height: 46%; max-width: none; max-height: none; object-fit: contain; }
-.cell .face .word { position: absolute; left: 6%; right: 6%; top: 50%; margin-top: -22px; height: 44px; line-height: 44px; text-align: center; font-size: 32px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #FFF; }
+.cell .face .word { position: absolute; left: 6%; right: 6%; top: 50%; margin-top: -22px; height: 44px; line-height: 44px; text-align: center; font-size: 32px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #FFF; }
 .cell .label { position: absolute; left: 0; right: 0; top: 186px; text-align: center; font-size: 24px; font-weight: 500; color: rgba(255, 255, 255, 0.6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cell.focus .face { -webkit-transform: scale(1.08); transform: scale(1.08); box-shadow: 0 16px 34px rgba(0, 0, 0, 0.55), inset 0 0 0 2px rgba(255, 255, 255, 0.4); }
 .cell.focus .label { color: #FFF; }
@@ -515,18 +528,18 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
   left: 560px;
   top: 150px;
   width: 800px;
-  border-radius: 40px;
+  border-radius: 36px;
   padding: 30px 30px 26px;
   box-sizing: border-box;
   background: -webkit-linear-gradient(top, rgba(34, 36, 44, 0.96), rgba(18, 20, 26, 0.97));
   background: linear-gradient(rgba(34, 36, 44, 0.96), rgba(18, 20, 26, 0.97));
   box-shadow: 0 40px 90px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.14), inset 0 0 0 1px rgba(255, 255, 255, 0.08);
 }
-.box .title { font-size: 38px; font-weight: 700; padding: 6px 18px 18px; letter-spacing: -0.01em; }
+.box .title { font-size: 38px; font-weight: 600; padding: 6px 18px 18px; letter-spacing: -0.01em; }
 .box .title .sym { width: 36px; height: 36px; vertical-align: -5px; margin-right: 14px; color: rgba(255, 255, 255, 0.85); }
 .box .list { position: relative; overflow: hidden; }
-.box .rows { -webkit-transition: -webkit-transform 0.2s cubic-bezier(0.2, 0.9, 0.3, 1); transition: transform 0.2s cubic-bezier(0.2, 0.9, 0.3, 1); }
-.box .row { position: relative; height: 70px; margin-bottom: 8px; border-radius: 20px; font-size: 30px; font-weight: 600; line-height: 70px; padding: 0 24px; white-space: nowrap; -webkit-transition: background-color 0.13s; transition: background-color 0.13s; }
+.box .rows { -webkit-transition: -webkit-transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1); transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.box .row { position: relative; height: 70px; margin-bottom: 8px; border-radius: 20px; font-size: 30px; font-weight: 600; line-height: 70px; padding: 0 24px; white-space: nowrap; }
 .box .row.focus { background: rgba(255, 255, 255, 0.13); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14); }
 .box .row .value { position: absolute; right: 24px; top: 0; color: rgba(255, 255, 255, 0.92); font-weight: 500; }
 .box .row .value .chev { color: rgba(255, 255, 255, 0.35); margin: 0 10px; }
@@ -553,7 +566,7 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .box .hint { padding: 14px 18px 0; font-size: 22px; font-weight: 500; color: rgba(255, 255, 255, 0.5); }
 .box .hint.warn { color: #FFC266; }
 .box .hint.steps { white-space: pre-line; line-height: 1.4; }
-.toggle { position: absolute; right: 24px; top: 13px; width: 78px; height: 44px; border-radius: 22px; background: #3A3D45; -webkit-transition: background-color 0.14s; transition: background-color 0.14s; }
+.toggle { position: absolute; right: 24px; top: 13px; width: 78px; height: 44px; border-radius: 22px; background: #3A3D45; }
 .toggle::after { content: ''; position: absolute; left: 4px; top: 4px; width: 36px; height: 36px; border-radius: 18px; background: #FFF; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35); -webkit-transition: -webkit-transform 0.14s; transition: transform 0.14s; }
 .toggle.on { background: #3FD69B; }
 .toggle.on::after { -webkit-transform: translateX(34px); transform: translateX(34px); }
@@ -595,7 +608,7 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
   box-shadow: 0 30px 70px rgba(0, 0, 0, 0.35), inset 0 1.5px 0 rgba(255, 255, 255, 0.4), inset 0 0 0 1px rgba(255, 255, 255, 0.18);
   white-space: nowrap;
 }
-#saver .clock .time { font-size: 150px; font-weight: 300; line-height: 1; letter-spacing: -0.02em; -webkit-font-feature-settings: 'tnum'; font-feature-settings: 'tnum'; }
+#saver .clock .time { font-size: 150px; font-weight: 200; line-height: 1; letter-spacing: -0.02em; -webkit-font-feature-settings: 'tnum'; font-feature-settings: 'tnum'; }
 #saver .clock .date { margin-top: 10px; font-size: 34px; font-weight: 500; color: rgba(255, 255, 255, 0.82); }
 #saver .clock .title { margin-top: 18px; font-size: 26px; font-weight: 500; color: rgba(255, 255, 255, 0.65); }
 #saver .clock .hint { margin-top: 8px; font-size: 22px; color: rgba(255, 255, 255, 0.55); }
@@ -628,7 +641,7 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 * { -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
 
 /* Tizen 2 and 1 GB TVs (see tv.js): no shadows or animations; their GPUs can't keep up while the focus moves. */
-.lite * { box-shadow: none !important; -webkit-transition: none !important; transition: none !important; }
+.lite * { box-shadow: none !important; text-shadow: none !important; -webkit-transition: none !important; transition: none !important; }
 /* webOS 3 (see tv.js): each tile and pick is its own compositor layer, so a move re-rasterizes almost nothing and what
    moves is a transform. Measured on a 4K UH6150 (installed at 1280x720, which drew the same pixels faster): 31-43 ms
    from key to screen along the apps (91 before), 67-93 ms along 10 picks, 60 fps at rest. Only the focused app keeps
@@ -642,20 +655,22 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .layered .card .back { width: 1040px; }
 .layered .card .img { background-color: transparent; box-shadow: none !important; }
 .layered .card .img::after { display: none; }
-.layered .tile { -webkit-transition: -webkit-transform 0.2s cubic-bezier(0.2, 0.9, 0.3, 1.15) !important; transition: transform 0.2s cubic-bezier(0.2, 0.9, 0.3, 1.15) !important; }
-.layered .card { -webkit-transition: -webkit-transform 0.22s cubic-bezier(0.2, 0.9, 0.3, 1.15) !important; transition: transform 0.22s cubic-bezier(0.2, 0.9, 0.3, 1.15) !important; }
+.layered .tile { -webkit-transition: -webkit-transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1) !important; transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1) !important; }
+.layered .card { -webkit-transition: -webkit-transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1) !important; transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1) !important; }
 .layered #cards {
-  -webkit-transition: -webkit-transform 0.32s cubic-bezier(0.2, 0.9, 0.3, 1) !important;
-  transition: transform 0.32s cubic-bezier(0.2, 0.9, 0.3, 1) !important;
+  -webkit-transition: -webkit-transform 0.32s cubic-bezier(0.2, 0.8, 0.2, 1) !important;
+  transition: transform 0.32s cubic-bezier(0.2, 0.8, 0.2, 1) !important;
 }
 .layered .card .back { -webkit-transition: opacity 0.45s !important; transition: opacity 0.45s !important; }
+.layered .card .cap { -webkit-transition: opacity 0.45s !important; transition: opacity 0.45s !important; }
 .layered #sky canvas { -webkit-transition: opacity 0.8s !important; transition: opacity 0.8s !important; }
-.layered .tile.focus { box-shadow: 0 18px 40px rgba(0, 0, 0, 0.34) !important; }
-.layered .night .tile.focus { box-shadow: 0 18px 40px rgba(0, 0, 0, 0.6) !important; }
+.layered .tile.focus { box-shadow: 0 20px 44px rgba(0, 0, 0, 0.32) !important; }
+.layered .night .tile.focus { box-shadow: 0 20px 44px rgba(0, 0, 0, 0.6) !important; }
 
 /* Samsungs up to 2 GB (see tv.js): the parts that move lose their soft shadows, which the TV repainted on every frame of
    a move, and what slides is a layer from the start, so a move starts at once. */
 .flat .tab, .flat .card .img, .flat .tile, .flat .key { box-shadow: none !important; }
+.flat .card .name, .flat .card .meta { text-shadow: none !important; }
 .flat .cell.focus .face { box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.4) !important; }
 .flat #home, .flat #drawer, .flat #cards, .flat .card, .flat #tiles, .flat .tile { will-change: transform; }
 .flat #top { will-change: opacity; }
@@ -670,14 +685,13 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .rtl * { letter-spacing: 0 !important; }
 body.rtl { font-family: 'Inter', 'Noto Sans Arabic', 'SamsungOne', 'Segoe UI', Tahoma, Arial, sans-serif; }
 
-.rtl #title { left: auto; right: 76px; }
-.rtl #tabs { left: auto; right: 54px; }
-.rtl .tab { margin-right: 0; margin-left: 4px; }
-.rtl #quotes .q { margin-left: 0; margin-right: 24px; }
-.rtl #quotes svg { margin-right: 0; margin-left: 6px; }
+.rtl #tabs { left: auto; right: 80px; }
+.rtl #quotes { right: auto; left: 360px; }
+.rtl #quotes .q { margin-left: 0; margin-right: 26px; }
+.rtl #quotes svg { margin-right: 0; margin-left: 7px; }
 .rtl .round.last .tip { left: -10px; right: auto; margin-left: 0; text-align: left; }
-.rtl .card .name, .rtl .card .meta { left: auto; right: 0; }
-.rtl #clock { left: auto; right: 76px; }
+.rtl .card .name, .rtl .card .meta { text-align: right; }
+.rtl #clock { left: auto; right: 80px; }
 
 .rtl .panel .head { left: auto; right: 34px; }
 .rtl .panel .side { right: auto; left: 34px; }
