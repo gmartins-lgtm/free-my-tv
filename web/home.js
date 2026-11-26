@@ -3,7 +3,8 @@
  *  - top: one bar; the tabs (Explore, Movies, Shows) as a segmented capsule at the start, the crypto quotes and the
  *    icon-only glass buttons (Live TV, HDMI Inputs, Settings) at the end;
  *  - three picks for this hour in the selected tab: the focused one is the hero, wide, with its title on the photo; the
- *    background is its photo, blurred, almost white;
+ *    background is its photo, blurred, almost white; or, when the TV says what was left halfway, Continue Watching:
+ *    equal 16:9 cards with a progress bar, a small clock at the top and no tabs;
  *  - the glass shelf with the apps; ↓ opens the drawer (inputs, shortcuts, weather, prices); ↑ or Back closes it;
  *  - a night look from sunset to sunrise; a screensaver after a few idle minutes.
  * The remote's arrows, OK and Back move the focus; a pointer (LG's Magic Remote) focuses what it points at.
@@ -482,6 +483,10 @@
   // MARK: - Top: title, tabs, buttons, quotes
 
   var TAB_KIND = [null, 'movie', 'tv'];
+  var watchMode = false;   // Continue Watching in the row instead of the picks
+
+  /** The tabs can hold focus: with a key and without Continue Watching (which has no Movies or Shows). */
+  function tabsShown() { return Data.hasKey() && !watchMode; }
 
   function renderTop() {
     $('title').textContent = tr('For You');
@@ -518,23 +523,31 @@
   // MARK: - Picks and background
 
   function renderCards() {
-    var list = Data.picks(TAB_KIND[st.tab]);
+    var watch = Data.watching(), list = watch.length ? watch : Data.picks(TAB_KIND[st.tab]);
     var holder = $('cards');
+    watchMode = watch.length > 0;
+    setClass(body, 'watch-mode', watchMode);
+    $('caption').textContent = watchMode ? tr('Continue Watching') : '';
     setClass(body, 'no-picks', !list.length);
     setClass(body, 'no-key', !Data.hasKey());   // as on Android: no title or tabs that could never show anything
-    if (!Data.hasKey() && st.zone === Z.TOP && st.top < 3) st.top = 3;
+    if (!tabsShown() && st.zone === Z.TOP && st.top < 3) st.top = 3;
     var same = list.length === cards.length;
-    for (var i = 0; same && i < list.length; i++) same = list[i].id === cards[i].id && list[i].backdrop === cards[i].backdrop && list[i].meta === cards[i].meta;
+    for (var i = 0; same && i < list.length; i++) same = list[i].id === cards[i].id && list[i].backdrop === cards[i].backdrop && list[i].meta === cards[i].meta && list[i].progress === cards[i].progress;
     if (same && holder.children.length === list.length) return;
     cards = list;
     holder.innerHTML = '';
     for (var c = 0; c < list.length; c++) {
-      var p = list[c], card = el('div', 'card', holder);
+      var p = list[c], card = el('div', watchMode ? 'card watch' : 'card', holder);
       var img = el('div', 'img', card);
       // Narrow: the poster (the backdrop cropped without one); the wide card fades its backdrop in over it, loaded then.
+      // Continue Watching: every card is 16:9, so its photo is the backdrop from the start, and nothing more loads.
       var poster = el('div', 'layer', img);
-      poster.style.backgroundImage = 'url(' + (p.poster ? Data.image(p.poster, 'w342') : Data.image(p.backdrop, 'w780')) + ')';
+      poster.style.backgroundImage = 'url(' + (p.poster && !watchMode ? Data.image(p.poster, 'w342') : Data.image(p.backdrop, 'w780')) + ')';
       el('div', 'layer back', img);
+      if (watchMode) {   // how far it got: a thin bar at the foot of the photo
+        var bar = el('div', 'bar', img);
+        el('div', 'fill', bar).style.width = Math.round(Math.max(0.02, Math.min(1, p.progress || 0)) * 100) + '%';
+      }
       // The title and its line sit on the photo, over a shade at its foot (the Apple TV app's hero): nothing under the row.
       var cap = el('div', 'cap', img);
       el('div', 'name', cap, I18N.name(p.title));
@@ -553,14 +566,16 @@
    * transform and the backdrop's opacity animate: the widths change at once (older TVs).
    */
   function layoutCards() {
-    var holder = $('cards'), nodes = holder.children, left = 80, scroll = Math.max(0, st.card - 2) * 360;
+    var holder = $('cards'), nodes = holder.children, left = 80;
+    // Continue Watching: four equal 16:9 cards (410 wide), the row sliding a card at a time past the fourth.
+    var scroll = watchMode ? Math.max(0, st.card - 3) * 450 : Math.max(0, st.card - 2) * 360;
     for (var i = 0; i < nodes.length; i++) {
-      var wide = i === st.card, w = wide ? 1040 : 320, n = nodes[i], at = left - scroll;
+      var wide = watchMode || i === st.card, w = watchMode ? 410 : wide ? 1040 : 320, n = nodes[i], at = left - scroll;
       startAt(n, left);
       n.style.width = w + 'px';
       setClass(n, 'wide', wide);
       setClass(n, 'edge', at < 0 || at > 1740);
-      if (wide && !n.getAttribute('data-back') && cards[i]) {
+      if (wide && !watchMode && !n.getAttribute('data-back') && cards[i]) {
         n.setAttribute('data-back', '1');
         n.querySelector('.back').style.backgroundImage = 'url(' + Data.image(cards[i].backdrop, 'w1280') + ')';
       }
@@ -727,6 +742,7 @@
     var old = d.querySelectorAll('.panel');
     for (var o = 0; o < old.length; o++) d.removeChild(old[o]);
     var wx = Prefs.weather(), coins = Data.activeCoins(), qt = coins.length > 0;
+    setClass(body, 'no-panels', !wx && !qt);   // only inputs and shortcuts: the drawer is shallower, and the shelf stays nearer the middle
     var split = 80 + 1760 * 0.585;
     if (wx) {
       var w = el('div', 'panel glass', d);
@@ -1566,6 +1582,7 @@
         else openSettings();
         return;
       case Z.CARDS:
+        if (cards[st.card] && cards[st.card].app) { launcher(cards[st.card].app, cards[st.card].appTitle || cards[st.card].title)(); return; }
         openTarget(cards[st.card], pickTarget(cards[st.card]));
         return;
       case Z.SHELF:
@@ -1623,17 +1640,17 @@
         else if (dy > 0) { openDrawer(); return; }
         else if (dy < 0) {
           if (cards.length) { st.zone = Z.CARDS; st.card = nearest(cardNodes, centerX(tiles[st.shelf])); }
-          else { st.zone = Z.TOP; st.top = Data.hasKey() ? st.tab : 3; }
+          else { st.zone = Z.TOP; st.top = tabsShown() ? st.tab : 3; }
         }
         break;
       case Z.CARDS:
         if (dx) st.card = Math.max(0, Math.min(cards.length - 1, st.card + dx));
-        else if (dy < 0) { st.zone = Z.TOP; st.top = st.tab; }
+        else if (dy < 0) { st.zone = Z.TOP; st.top = tabsShown() ? st.tab : 3; }
         else if (shelf.length) { st.zone = Z.SHELF; st.shelf = nearest(tiles, centerX(cardNodes[st.card])); }
         break;
       case Z.TOP:
         if (dx) {
-          st.top = Math.max(Data.hasKey() ? 0 : 3, Math.min(5, st.top + dx));   // without the picks the tabs can't hold focus
+          st.top = Math.max(tabsShown() ? 0 : 3, Math.min(5, st.top + dx));   // without the picks the tabs can't hold focus
           if (st.top < 3) selectTab(st.top);   // as on Apple TV: focusing a tab selects it
         } else if (dy > 0) {
           if (cards.length) { st.zone = Z.CARDS; st.card = Math.min(cards.length - 1, st.top < 3 ? 0 : cards.length - 1); }
@@ -1699,7 +1716,7 @@
       if (saverOn || (sheetOpen() !== (zone === Z.APPS || zone === Z.SETTINGS || zone === Z.EDIT || zone === Z.LANG || zone === Z.CITY || zone === Z.KEY || zone === Z.ABOUT))) return;
       if (zone === Z.DRAWER && st.zone !== Z.DRAWER) return;
       if (zone !== Z.DRAWER && st.zone === Z.DRAWER && zone !== Z.SHELF) return;
-      if (zone === Z.TOP && index < 3 && !Data.hasKey()) return;   // the tabs are hidden without the picks
+      if (zone === Z.TOP && index < 3 && !tabsShown()) return;   // the tabs are hidden without the picks
       if (zone === Z.SHELF && st.zone === Z.DRAWER) closeDrawer();
       st.zone = zone;
       if (zone === Z.TOP) { st.top = index; if (index < 3) selectTab(index); }

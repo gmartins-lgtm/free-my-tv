@@ -96,6 +96,13 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .drawer-open #top { opacity: 0; }
 #drawer { -webkit-transform: translateY(560px); transform: translateY(560px); opacity: 0; }
 .drawer-open #drawer { -webkit-transform: none; transform: none; opacity: 1; }
+/* With the weather and the prices off, the drawer holds only inputs and shortcuts: it rises 300 instead of 560, so the
+   shelf sits in the middle and nothing below it is empty. */
+.no-panels.drawer-open #home { -webkit-transform: translateY(-300px); transform: translateY(-300px); }
+.no-panels #drawer { -webkit-transform: translateY(300px); transform: translateY(300px); }
+.no-panels.drawer-open #drawer { -webkit-transform: none; transform: none; }
+.no-panels .row-title { top: 754px; }
+.no-panels .key { top: 800px; }
 /* Closed, it still spans the screen below the shelf: only its keys take the pointer, and only when it's open. */
 #drawer { pointer-events: none; }
 .drawer-open #drawer .key { pointer-events: auto; }
@@ -315,6 +322,25 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .card.edge .name, .card.edge .meta { visibility: hidden; }
 .night .card .img { background-color: #2C2C2E; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.32); }
 .night .card.focus .img { box-shadow: 0 28px 60px rgba(0, 0, 0, 0.55); }
+
+/* MARK: - Continue Watching (Data.watching): four equal 16:9 cards with a progress bar under a row title, a small clock
+   at the start of the bar and no tabs. */
+
+#caption { position: absolute; left: 80px; top: 318px; font-size: 30px; font-weight: 600; color: #1D1D1F; white-space: nowrap; }
+.night #caption { color: #F5F5F7; }
+.card.watch { top: 378px; height: 231px; }   /* the row sits in the middle of the room between the bar and the shelf */
+.card.watch .layer { background-position: center; }
+.card.watch .cap { height: 62%; }
+.card.watch .name { left: 24px; right: 24px; bottom: 50px; font-size: 28px; }
+.card.watch .meta { left: 24px; right: 24px; bottom: 22px; font-size: 20px; }
+.card .bar { position: absolute; left: 0; right: 0; bottom: 0; height: 6px; background: rgba(255, 255, 255, 0.28); }
+.card .bar .fill { height: 100%; background: #FFF; }
+.card.watch.focus { -webkit-transform: scale(1.06); transform: scale(1.06); }
+.watch-mode #tabs { display: none; }
+/* The time, small, where the tabs would be: the row below is the content. */
+.watch-mode #clock { display: block; top: 64px; }
+.watch-mode #clock .time { font-size: 40px; font-weight: 500; letter-spacing: 0; line-height: 64px; }
+.watch-mode #clock .date, .watch-mode #clock .wx { display: none; }
 
 /* Without a TMDB key (or picks yet): the date, the time and the weather instead of the cards, as Android's clock layout. */
 #clock {
@@ -692,6 +718,7 @@ body.rtl { font-family: 'Inter', 'Noto Sans Arabic', 'SamsungOne', 'Segoe UI', T
 .rtl .round.last .tip { left: -10px; right: auto; margin-left: 0; text-align: left; }
 .rtl .card .name, .rtl .card .meta { text-align: right; }
 .rtl #clock { left: auto; right: 80px; }
+.rtl #caption { left: auto; right: 80px; }
 
 .rtl .panel .head { left: auto; right: 34px; }
 .rtl .panel .side { right: auto; left: 34px; }

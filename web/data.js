@@ -858,6 +858,10 @@ var Data = (function () {
     recsError: function () { return recsError; },
     picks: now,
     showcase: all,
+    /** Continue Watching: what the person left halfway, when the TV gives it (none of LG's or Samsung's does to a
+     *  web app yet; Android reads Watch Next). Items: {id, title, meta, backdrop, progress 0..1, app, appTitle}.
+     *  While it has any, the home shows them where the picks go, and the tabs make no sense, so they hide. */
+    watching: function () { return []; },
     image: function (path, size) { return path ? 'https://image.tmdb.org/t/p/' + (size || 'w1280') + path : ''; },
 
     /** Night at the location: from sunset to sunrise (the last forecast; without one, 6:00 and 18:00). */
