@@ -111,16 +111,16 @@
     ['netflix', /^netflix$/, /netflix/i, ['#0A0A0A', '#000000']],
     ['youtube', /youtube/, /^youtube$/i, ['#1C1C1E', '#09090A']],
     ['prime', /^amazon$/, /prime video|amazon/i, ['#2AA8FF', '#0A68D4']],
-    ['disney', /disney/, /disney/i, ['#173584', '#08143F']],
-    ['max', /hbo|wbd/, /^(hbo )?max$|hbo max/i, ['#5C30E8', '#221684']],
+    ['disney', /disney/, /disney/i, ['#0B6E7F', '#042336']],          // Disney+'s teal ("Aurora", since March 2024)
+    ['max', /hbo|wbd/, /^(hbo )?max$|hbo max/i, ['#18202A', '#050912']],   // HBO Max again (July 2025): the logo on near-black
     ['appletv', /appletv|apple\.tv/, /apple tv/i, ['#1C1C1E', '#000000']],
     ['hulu', /^hulu/, /hulu/i, ['#1CE783', '#0B8F4E']],
     ['paramount', /paramount|cbs/, /paramount/i, ['#0064FF', '#002A86']],
     ['peacock', /peacock/, /peacock/i, ['#1C1C1E', '#000000']],
     ['nfl', /nfl/, /^nfl/i, ['#013369', '#00163D']],
-    ['globoplay', /globoplay/, /globoplay/i, ['#FF8A1F', '#FF2D5A']],
+    ['globoplay', /globoplay/, /globoplay/i, ['#FF2A50', '#E8002E']],   // Globoplay's red (the 10-year identity, 2025)
     ['jellyfin', /jellyfin/i, /jellyfin/i, ['#AA5CC3', '#00A4DC']],
-    ['spotify', /spotify/, /spotify/i, ['#1DB954', '#0F7A36']]
+    ['spotify', /spotify/, /spotify/i, ['#1ED760', '#14A84A']]        // Spotify's logo green
   ];
   // Apps shown at once, as on Android: 8 (today's smallest tiles, 178 wide); the shelf scrolls for the rest. The
   // built-in list keeps 8 too.

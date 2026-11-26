@@ -149,7 +149,7 @@ final class Recs {
         SERVICE_NAME.put("paramount", "Paramount+");
         SERVICE_NAME.put("peacock", "Peacock");
         SERVICE_NAME.put("globoplay", "Globoplay");
-        SERVICE_NAME.put("max", "Max");
+        SERVICE_NAME.put("max", "HBO Max");
         SERVICE_NAME.put("appletv", "Apple TV");
         SERVICE_NAME.put("hotstar", "JioHotstar");
         SERVICE_NAME.put("okko", "Okko");
